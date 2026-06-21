@@ -366,6 +366,7 @@ function renderQuestion() {
 
   updateNavButtons();
   renderMath($("#questionContainer"));
+  applyHighlight();
 }
 
 function onSelectOption(key) {
@@ -391,7 +392,9 @@ function updateNavButtons() {
   const last = qz.current === qz.questions.length - 1;
   $("#prevBtn").disabled = qz.current === 0;
   if (qz.mode === "exam") {
+    // 測驗：非最後一題顯示「下一題」，最後一題才顯示「看結果」
     $("#nextBtn").hidden = last;
+    $("#nextBtn").textContent = "下一題 →";
     $("#submitBtn").hidden = !last;
   } else {
     $("#nextBtn").hidden = false;
@@ -401,12 +404,44 @@ function updateNavButtons() {
 }
 
 function navPrev() {
-  if (App.quiz.current > 0) { App.quiz.current--; renderQuestion(); }
+  const qz = App.quiz;
+  if (qz.current > 0) { qz.current--; qz.highlight = null; renderQuestion(); }
 }
 function navNext() {
   const qz = App.quiz;
-  if (qz.current < qz.questions.length - 1) { qz.current++; renderQuestion(); }
+  if (qz.current < qz.questions.length - 1) { qz.current++; qz.highlight = null; renderQuestion(); }
   else if (qz.mode === "practice") { finishQuiz(); }
+}
+
+/* ===================== 鍵盤操作 ===================== */
+function applyHighlight() {
+  const qz = App.quiz;
+  $$("#questionContainer .option").forEach((el, i) => {
+    el.classList.toggle("kbd-focus", i === qz.highlight);
+  });
+}
+function moveHighlight(dir) {
+  const qz = App.quiz;
+  if (!qz) return;
+  const q = qz.questions[qz.current];
+  if (qz.mode === "practice" && qz.locked[q._id]) return; // 已作答不再移動
+  const n = optionsOf(q).length;
+  if (!n) return;
+  qz.highlight = (qz.highlight == null) ? 0 : (qz.highlight + dir + n) % n; // 首次→第一個，之後循環
+  applyHighlight();
+  const el = $$("#questionContainer .option")[qz.highlight];
+  if (el) el.scrollIntoView({ block: "nearest" });
+}
+function commitHighlight() {
+  const qz = App.quiz;
+  if (!qz) return;
+  const q = qz.questions[qz.current];
+  // 練習模式已作答 → Enter 直接下一題
+  if (qz.mode === "practice" && qz.locked[q._id]) { navNext(); return; }
+  if (qz.highlight == null) return;
+  const key = optionsOf(q)[qz.highlight].key;
+  onSelectOption(key);                       // 練習：顯示對錯；測驗：記錄
+  if (qz.mode === "exam") navNext();         // 測驗：確認後自動下一題
 }
 
 /* ===================== 交卷 / 結果 ===================== */
@@ -588,10 +623,23 @@ async function init() {
   };
   $("#prevBtn").onclick = navPrev;
   $("#nextBtn").onclick = navNext;
+
+  // 鍵盤操作：←→ 切換題目；↑↓ 選選項；Enter 確認
+  document.addEventListener("keydown", (e) => {
+    if ($("#quizView").hidden) return;                       // 只在作答頁
+    if ($("#ptable").classList.contains("open")) return;     // 週期表打開時不攔截
+    switch (e.key) {
+      case "ArrowLeft":  e.preventDefault(); navPrev(); break;
+      case "ArrowRight": e.preventDefault(); navNext(); break;
+      case "ArrowDown":  e.preventDefault(); moveHighlight(1); break;
+      case "ArrowUp":    e.preventDefault(); moveHighlight(-1); break;
+      case "Enter":      e.preventDefault(); commitHighlight(); break;
+    }
+  });
   $("#submitBtn").onclick = () => {
     const qz = App.quiz;
     const unanswered = qz.questions.filter((q) => !qz.answers[q._id]).length;
-    if (unanswered > 0 && !confirm(`還有 ${unanswered} 題未作答，確定交卷？`)) return;
+    if (unanswered > 0 && !confirm(`還有 ${unanswered} 題未作答，確定要看結果嗎？`)) return;
     finishQuiz();
   };
   $("#homeBtn").onclick = () => { if (confirm("離開目前作答並回到設定頁？")) showView("setup"); };
