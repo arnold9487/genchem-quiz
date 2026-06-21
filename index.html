@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>普化期末考 練習題</title>
+
+  <!-- KaTeX：化學式 / 數學式渲染 -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <!-- mhchem 擴充：支援 \ce{} 化學式，必須在 auto-render 之前載入 -->
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/mhchem.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <h1>普化期末考 · 練習題</h1>
+    <div class="topbar-tools">
+      <button id="homeBtn" class="ghost-btn" hidden>↩ 回設定</button>
+      <button id="themeBtn" class="ghost-btn icon-btn" title="切換深色 / 淺色" aria-label="切換深色淺色">🌙</button>
+    </div>
+  </header>
+
+  <!-- ============ 週期表抽屜（最上層，任何頁面都可叫出）============ -->
+  <div id="ptable" class="ptable" aria-hidden="true">
+    <button id="ptableTab" class="ptable-tab" aria-label="開啟元素週期表"><span class="tri">◀</span></button>
+    <div class="ptable-body">
+      <div class="ptable-head">
+        <span>元素週期表</span>
+        <button id="ptableClose" class="ghost-btn icon-btn" aria-label="關閉">✕</button>
+      </div>
+      <div class="ptable-scroll">
+        <img src="Periodic_table_zh-tw.svg" alt="元素週期表">
+      </div>
+    </div>
+  </div>
+
+  <main id="app">
+    <!-- ============ 設定頁 ============ -->
+    <section id="setupView" class="view">
+      <div class="card">
+        <h2>選擇章節</h2>
+        <div id="chapterList" class="chapter-list">
+          <p class="muted">載入章節中…</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>模式</h2>
+        <div class="seg" id="modeSeg">
+          <label class="seg-item">
+            <input type="radio" name="mode" value="practice" checked>
+            <span><strong>練習</strong><small>即點即看，不計錯題</small></span>
+          </label>
+          <label class="seg-item">
+            <input type="radio" name="mode" value="exam">
+            <span><strong>測驗</strong><small>全部寫完才看結果，計入紀錄</small></span>
+          </label>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>題數</h2>
+        <div class="count-row">
+          <label class="seg-item inline">
+            <input type="radio" name="countMode" value="all" checked>
+            <span>全部</span>
+          </label>
+          <label class="seg-item inline">
+            <input type="radio" name="countMode" value="custom">
+            <span>自訂</span>
+          </label>
+          <input type="number" id="customCount" min="1" value="20" disabled>
+          <span class="muted">題</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>出題優先順序</h2>
+        <div class="seg vertical" id="prioritySeg">
+          <label class="seg-item">
+            <input type="radio" name="priority" value="order">
+            <span><strong>依序</strong><small>按章節與題號順序出題</small></span>
+          </label>
+          <label class="seg-item">
+            <input type="radio" name="priority" value="random" checked>
+            <span><strong>隨機</strong><small>不依紀錄，完全隨機</small></span>
+          </label>
+          <label class="seg-item">
+            <input type="radio" name="priority" value="wrong">
+            <span><strong>優先錯題</strong><small>答錯次數多的先出</small></span>
+          </label>
+          <label class="seg-item">
+            <input type="radio" name="priority" value="unseen">
+            <span><strong>優先沒考過</strong><small>還沒作答過的先出</small></span>
+          </label>
+          <label class="seg-item">
+            <input type="radio" name="priority" value="least">
+            <span><strong>作答次數較少</strong><small>練得少的先出</small></span>
+          </label>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button id="startBtn" class="primary-btn">開始作答</button>
+      </div>
+
+      <div class="card subtle">
+        <h2>紀錄</h2>
+        <p class="muted" id="recordSummary">尚無紀錄。</p>
+        <div class="record-btns">
+          <button id="exportBtn" class="ghost-btn">⬇ 下載紀錄</button>
+          <button id="importBtn" class="ghost-btn">⬆ 上傳紀錄</button>
+          <button id="clearBtn" class="ghost-btn danger">🗑 清除紀錄</button>
+          <input type="file" id="importFile" accept="application/json" hidden>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 作答頁 ============ -->
+    <section id="quizView" class="view" hidden>
+      <div class="progress">
+        <div class="progress-bar"><div id="progressFill"></div></div>
+        <span id="progressText"></span>
+      </div>
+      <div id="questionContainer"></div>
+      <div class="quiz-nav">
+        <button id="prevBtn" class="ghost-btn">← 上一題</button>
+        <button id="nextBtn" class="primary-btn">下一題 →</button>
+        <button id="submitBtn" class="primary-btn" hidden>交卷</button>
+      </div>
+    </section>
+
+    <!-- ============ 結果頁 ============ -->
+    <section id="resultView" class="view" hidden>
+      <div class="card result-summary">
+        <h2>結果</h2>
+        <div id="scoreBox"></div>
+      </div>
+      <div id="reviewList"></div>
+      <div class="actions">
+        <button id="backHomeBtn" class="primary-btn">回設定頁</button>
+      </div>
+    </section>
+  </main>
+
+  <script src="js/app.js"></script>
+</body>
+</html>
