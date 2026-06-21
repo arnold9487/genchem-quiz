@@ -264,6 +264,18 @@ function imagesHtml(field) {
   return list.map((src) => `<img src="${esc(src)}" alt="題目圖片" loading="lazy">`).join("");
 }
 
+// 渲染數據表格（題目用），t = { head:[...], rows:[[...],...] }
+function tableHtml(t) {
+  if (!t || !Array.isArray(t.rows) || !t.rows.length) return "";
+  const head = Array.isArray(t.head)
+    ? `<thead><tr>${t.head.map((h) => `<th>${esc(h)}</th>`).join("")}</tr></thead>`
+    : "";
+  const body = `<tbody>${t.rows
+    .map((r) => `<tr>${r.map((c) => `<td>${esc(c)}</td>`).join("")}</tr>`)
+    .join("")}</tbody>`;
+  return `<div class="q-table-wrap"><table class="q-table">${head}${body}</table></div>`;
+}
+
 function renderQuestion() {
   const qz = App.quiz;
   const q = qz.questions[qz.current];
@@ -283,6 +295,7 @@ function renderQuestion() {
   let html = `<div class="q-card">
     <div class="q-meta">${esc(q._chapterName)} · 第 ${esc(q["題號"])} 題 · ${esc(q["類型"] || "")}</div>
     ${collapseRow("q", `<div class="q-text">${esc(q["原題目"])}</div>`, q["中文題目(全翻)"])}
+    ${tableHtml(q["表格"])}
     ${qImgs ? `<div class="q-images">${qImgs}</div>` : ""}
     <div class="options">`;
 
@@ -452,6 +465,7 @@ function renderResult(rows, correct) {
         </div>
         <div class="q-text">${esc(q["原題目"])}</div>
         ${q["中文題目(全翻)"] ? `<div class="collap-zh">${esc(q["中文題目(全翻)"])}</div>` : ""}
+        ${tableHtml(q["表格"])}
         ${imagesHtml(q["題目圖片"]) ? `<div class="q-images">${imagesHtml(q["題目圖片"])}</div>` : ""}
         <div style="margin-top:10px">${optReason}</div>
       </div>`;

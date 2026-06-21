@@ -164,7 +164,14 @@ button { font: inherit; cursor: pointer; border-radius: 10px; border: 1px solid 
 /* ---------- Question ---------- */
 .q-card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px; box-shadow: var(--shadow); }
 .q-meta { font-size: .8rem; color: var(--muted); margin-bottom: 8px; }
-.q-text { font-size: 1.08rem; font-weight: 600; }
+.q-text { font-size: 1.08rem; font-weight: 600; white-space: pre-wrap; }
+.collap-zh { white-space: pre-wrap; }
+
+/* 數據表格 */
+.q-table-wrap { overflow-x: auto; margin: 12px 0; -webkit-overflow-scrolling: touch; }
+.q-table { border-collapse: collapse; width: 100%; font-size: .9rem; }
+.q-table th, .q-table td { border: 1px solid var(--line); padding: 6px 10px; text-align: center; white-space: nowrap; }
+.q-table th { background: var(--accent-bg); font-weight: 700; }
 
 /* collapsible row (question + options share this) */
 .collap { display: flex; gap: 8px; align-items: flex-start; }
